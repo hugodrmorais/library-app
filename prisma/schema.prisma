@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  loans     Loan[]
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  isbn        String   @unique
+  category    String
+  publishedAt Int
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  loans       Loan[]
+}
+
+model Loan {
+  id         String   @id @default(cuid())
+  userId     String
+  bookId     String
+  borrowedAt DateTime @default(now())
+  returnedAt DateTime?
+  dueDate    DateTime
+  status     LoanStatus @default(ACTIVE)
+  user       User     @relation(fields: [userId], references: [id])
+  book       Book     @relation(fields: [bookId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+}

@@ -1,103 +1,312 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import AddBookModal from '@/components/AddBookModal';
+import AddUserModal from '@/components/AddUserModal';
+import NewLoanModal from '@/components/NewLoanModal';
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  category: string;
+  publishedAt: number;
+  available: boolean;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  _count: {
+    loans: number;
+  };
+}
+
+interface Loan {
+  id: string;
+  userId: string;
+  bookId: string;
+  borrowedAt: string;
+  dueDate: string;
+  status: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  book: {
+    title: string;
+    author: string;
+    isbn: string;
+  };
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    availableBooks: 0,
+    totalUsers: 0,
+    activeLoans: 0
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const fetchBooks = async () => {
+    try {
+      const response = await fetch('/api/books');
+      if (response.ok) {
+        const booksData = await response.json();
+        setBooks(booksData);
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const usersData = await response.json();
+        setUsers(usersData);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchLoans = async () => {
+    try {
+      const response = await fetch('/api/loans');
+      if (response.ok) {
+        const loansData = await response.json();
+        setLoans(loansData);
+      }
+    } catch (error) {
+      console.error('Error fetching loans:', error);
+    }
+  };
+
+  const updateStats = () => {
+    setStats({
+      totalBooks: books.length,
+      availableBooks: books.filter(book => book.available).length,
+      totalUsers: users.length,
+      activeLoans: loans.filter(loan => loan.status === 'ACTIVE').length
+    });
+  };
+
+  useEffect(() => {
+    fetchBooks();
+    fetchUsers();
+    fetchLoans();
+  }, []);
+
+  useEffect(() => {
+    updateStats();
+  }, [books, users, loans]);
+
+  const handleBookAdded = () => {
+    fetchBooks();
+  };
+
+  const handleUserAdded = () => {
+    fetchUsers();
+  };
+
+  const handleLoanCreated = () => {
+    fetchBooks();
+    fetchLoans();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            📚 Digital Library
+          </h1>
+          <p className="text-xl text-gray-800">
+            Book and loan management system
+          </p>
+        </header>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Statistics Card */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              📊 Statistics
+            </h2>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-800">Total Books:</span>
+                <span className="font-semibold text-gray-900">{stats.totalBooks}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-800">Available Books:</span>
+                <span className="font-semibold text-gray-900">{stats.availableBooks}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-800">Active Users:</span>
+                <span className="font-semibold text-gray-900">{stats.totalUsers}</span>
+              </div>
+            </div>
+          </div>
+
+                    {/* Quick Actions Card */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              ⚡ Quick Actions
+            </h2>
+            <div className="space-y-3">
+              <button
+                onClick={() => setIsBookModalOpen(true)}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                ➕ Add Book
+              </button>
+              <button
+                onClick={() => setIsUserModalOpen(true)}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                👤 Register User
+              </button>
+              <button
+                onClick={() => setIsLoanModalOpen(true)}
+                className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                📖 New Loan
+              </button>
+            </div>
+          </div>
+
+          {/* System Status Card */}
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              🔧 System Status
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-gray-800">Database: Connected</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-gray-800">Prisma: Active</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                <span className="text-gray-800">Next.js: Running</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+                {/* Books List */}
+        {books.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">📚 Registered Books</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {books.map((book) => (
+                <div key={book.id} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      book.available
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {book.available ? 'Available' : 'Borrowed'}
+                    </span>
+                  </div>
+                  <p className="text-gray-800 mb-2">Author: {book.author}</p>
+                  <p className="text-gray-800 mb-2">ISBN: {book.isbn}</p>
+                  <p className="text-gray-800 mb-2">Category: {book.category}</p>
+                  <p className="text-gray-800">Year: {book.publishedAt}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Users List */}
+        {users.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">👥 Registered Users</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {users.map((user) => (
+                <div key={user.id} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      user.role === 'ADMIN'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </div>
+                  <p className="text-gray-800 mb-2">Email: {user.email}</p>
+                  <p className="text-gray-800 mb-2">Loans: {user._count.loans}</p>
+                  <p className="text-gray-800">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active Loans List */}
+        {loans.filter(loan => loan.status === 'ACTIVE').length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">📖 Active Loans</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loans.filter(loan => loan.status === 'ACTIVE').map((loan) => (
+                <div key={loan.id} className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">{loan.book.title}</h3>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-gray-800 mb-2">Borrowed by: {loan.user.name}</p>
+                  <p className="text-gray-800 mb-2">Author: {loan.book.author}</p>
+                  <p className="text-gray-800 mb-2">Due Date: {new Date(loan.dueDate).toLocaleDateString()}</p>
+                  <p className="text-gray-800">Borrowed: {new Date(loan.borrowedAt).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <footer className="text-center mt-12 text-gray-600">
+          <p>© 2024 Digital Library - Built with Next.js and Prisma</p>
+        </footer>
+      </div>
+
+      <AddBookModal
+        isOpen={isBookModalOpen}
+        onClose={() => setIsBookModalOpen(false)}
+        onBookAdded={handleBookAdded}
+      />
+
+      <AddUserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onUserAdded={handleUserAdded}
+      />
+
+      <NewLoanModal
+        isOpen={isLoanModalOpen}
+        onClose={() => setIsLoanModalOpen(false)}
+        onLoanCreated={handleLoanCreated}
+      />
     </div>
   );
 }
