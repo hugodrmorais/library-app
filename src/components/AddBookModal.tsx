@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AddBookModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBookAdded: () => void;
+  bookToEdit?: Book | null;
+  onBookUpdated?: () => void;
 }
 
-export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookModalProps) {
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  category: string;
+  publishedAt: number;
+  available: boolean;
+}
+
+export default function AddBookModal({ isOpen, onClose, onBookAdded, bookToEdit, onBookUpdated }: AddBookModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -19,26 +31,16 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/books', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+  useEffect(() => {
+    if (bookToEdit) {
+      setFormData({
+        title: bookToEdit.title,
+        author: bookToEdit.author,
+        isbn: bookToEdit.isbn,
+        category: bookToEdit.category,
+        publishedAt: String(bookToEdit.publishedAt)
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao adicionar livro');
-      }
-
-      // Limpar formulário
+    } else {
       setFormData({
         title: '',
         author: '',
@@ -46,11 +48,47 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
         category: '',
         publishedAt: ''
       });
+    }
+  }, [bookToEdit, isOpen]);
 
-      onBookAdded();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      let response;
+      if (bookToEdit) {
+        response = await fetch(`/api/books/${bookToEdit.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+      } else {
+        response = await fetch('/api/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error saving book');
+      }
+
+      if (bookToEdit && onBookUpdated) {
+        onBookUpdated();
+      } else {
+        onBookAdded();
+      }
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -69,7 +107,7 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">📚 Add Book</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{bookToEdit ? '✏️ Edit Book' : '📚 Add Book'}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -86,7 +124,7 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Title *
             </label>
             <input
@@ -94,13 +132,13 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Author *
             </label>
             <input
@@ -108,13 +146,13 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
               name="author"
               value={formData.author}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               ISBN *
             </label>
             <input
@@ -122,20 +160,20 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
               name="isbn"
               value={formData.isbn}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Category *
             </label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             >
               <option value="">Select a category</option>
@@ -153,7 +191,7 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-800 mb-1">
+            <label className="block text-sm font-medium text-black mb-1">
               Publication Year *
             </label>
             <input
@@ -163,7 +201,7 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
               onChange={handleChange}
               min="1000"
               max={new Date().getFullYear()}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               required
             />
           </div>
@@ -181,7 +219,7 @@ export default function AddBookModal({ isOpen, onClose, onBookAdded }: AddBookMo
               disabled={isLoading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              {isLoading ? 'Adding...' : 'Add Book'}
+              {isLoading ? (bookToEdit ? 'Saving...' : 'Adding...') : (bookToEdit ? 'Save Changes' : 'Add Book')}
             </button>
           </div>
         </form>

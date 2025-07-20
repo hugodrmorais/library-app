@@ -1,133 +1,139 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import BookForm from '@/components/forms/BookForm'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import AddBookModal from "@/components/AddBookModal";
 
 interface Book {
-  id: string
-  title: string
-  author: string
-  isbn: string
-  category: string
-  publishedAt: number
-  available: boolean
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  category: string;
+  publishedAt: number;
+  available: boolean;
 }
 
 export default function BooksPage() {
-  const [books, setBooks] = useState<Book[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-
-  useEffect(() => {
-    fetchBooks()
-  }, [])
+  const [books, setBooks] = useState<Book[]>([]);
+  const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [editBook, setEditBook] = useState<Book | null>(null);
 
   const fetchBooks = async () => {
     try {
-      const params = new URLSearchParams()
-      if (searchTerm) params.append('search', searchTerm)
-      if (selectedCategory) params.append('category', selectedCategory)
-
-      const response = await fetch(`/api/books?${params}`)
-      const data = await response.json()
-      setBooks(data)
-    } catch (error) {
-      console.error('Erro ao buscar livros:', error)
-    }
-  }
-
-  const handleAddBook = async (bookData: any) => {
-    try {
-      const response = await fetch('/api/books', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookData)
-      })
-
+      const response = await fetch("/api/books");
       if (response.ok) {
-        setShowForm(false)
-        fetchBooks()
+        const booksData = await response.json();
+        setBooks(booksData);
       }
     } catch (error) {
-      console.error('Erro ao adicionar livro:', error)
+      console.error("Error fetching books:", error);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
+  const handleAddBook = () => {
+    setEditBook(null);
+    setIsBookModalOpen(true);
+  };
+
+  const handleEditBook = (book: Book) => {
+    setEditBook(book);
+    setIsBookModalOpen(true);
+  };
+
+  const handleDeleteBook = async (book: Book) => {
+    if (!confirm(`Are you sure you want to delete the book "${book.title}"?`)) return;
+    try {
+      const response = await fetch(`/api/books/${book.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error deleting book');
+      }
+      fetchBooks();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Unknown error');
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Livros</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          {showForm ? 'Cancelar' : 'Adicionar Livro'}
-        </button>
-      </div>
-
-      {showForm && (
-        <div className="mb-6 p-6 bg-white rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Adicionar Novo Livro</h2>
-          <BookForm onSubmit={handleAddBook} />
-        </div>
-      )}
-
-      <div className="mb-6 flex gap-4">
-        <input
-          type="text"
-          placeholder="Buscar livros..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-        />
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md"
-        >
-          <option value="">Todas as categorias</option>
-          <option value="Ficção">Ficção</option>
-          <option value="Não-Ficção">Não-Ficção</option>
-          <option value="Tecnologia">Tecnologia</option>
-          <option value="História">História</option>
-          <option value="Ciência">Ciência</option>
-        </select>
-        <button
-          onClick={fetchBooks}
-          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-        >
-          Buscar
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {books.map((book) => (
-          <div
-            key={book.id}
-            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
-          >
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {book.title}
-            </h3>
-            <p className="text-gray-600 mb-2">Autor: {book.author}</p>
-            <p className="text-gray-600 mb-2">ISBN: {book.isbn}</p>
-            <p className="text-gray-600 mb-2">Categoria: {book.category}</p>
-            <p className="text-gray-600 mb-2">Ano: {book.publishedAt}</p>
-            <span
-              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                book.available
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }`}
-            >
-              {book.available ? 'Disponível' : 'Indisponível'}
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow mb-8">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-gray-900">Digital Library</Link>
+          <div className="space-x-6">
+            <Link href="/" className="text-gray-800 hover:text-blue-600 font-medium">Dashboard</Link>
+            <Link href="/books" className="text-gray-800 hover:text-blue-600 font-medium">Books</Link>
+            <Link href="/users" className="text-gray-800 hover:text-blue-600 font-medium">Users</Link>
+            <Link href="/loans" className="text-gray-800 hover:text-blue-600 font-medium">Loans</Link>
           </div>
-        ))}
+        </div>
+      </nav>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <header className="text-3xl font-bold text-gray-900">📚 Books</header>
+          <button
+            onClick={handleAddBook}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            ➕ Add Book
+          </button>
+        </div>
+        <p className="text-xl text-gray-800 mb-8">List of all registered books</p>
+        {books.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {books.map((book) => (
+              <div key={book.id} className="bg-white rounded-lg shadow-lg p-6 relative">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      book.available
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {book.available ? "Available" : "Borrowed"}
+                  </span>
+                </div>
+                <p className="text-gray-800 mb-2">Author: {book.author}</p>
+                <p className="text-gray-800 mb-2">ISBN: {book.isbn}</p>
+                <p className="text-gray-800 mb-2">Category: {book.category}</p>
+                <p className="text-gray-800">Year: {book.publishedAt}</p>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleEditBook(book)}
+                    className="px-3 py-1 bg-yellow-400 text-white rounded hover:bg-yellow-500 text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteBook(book)}
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-700 text-center">No books registered yet.</p>
+        )}
       </div>
+      <AddBookModal
+        isOpen={isBookModalOpen}
+        onClose={() => setIsBookModalOpen(false)}
+        onBookAdded={fetchBooks}
+        bookToEdit={editBook}
+        onBookUpdated={fetchBooks}
+      />
     </div>
-  )
+  );
 }

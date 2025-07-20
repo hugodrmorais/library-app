@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import AddBookModal from '@/components/AddBookModal';
 import AddUserModal from '@/components/AddUserModal';
 import NewLoanModal from '@/components/NewLoanModal';
+import Link from "next/link";
 
 interface Book {
   id: string;
@@ -128,6 +129,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Navbar */}
+      <nav className="bg-white shadow mb-8">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-gray-900">Digital Library</Link>
+          <div className="space-x-6">
+            <Link href="/books" className="text-gray-800 hover:text-blue-600 font-medium">Books</Link>
+            <Link href="/users" className="text-gray-800 hover:text-blue-600 font-medium">Users</Link>
+            <Link href="/loans" className="text-gray-800 hover:text-blue-600 font-medium">Loans</Link>
+          </div>
+        </div>
+      </nav>
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -209,81 +221,7 @@ export default function Home() {
           </div>
         </div>
 
-                {/* Books List */}
-        {books.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">📚 Registered Books</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {books.map((book) => (
-                <div key={book.id} className="bg-white rounded-lg shadow-lg p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{book.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      book.available
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {book.available ? 'Available' : 'Borrowed'}
-                    </span>
-                  </div>
-                  <p className="text-gray-800 mb-2">Author: {book.author}</p>
-                  <p className="text-gray-800 mb-2">ISBN: {book.isbn}</p>
-                  <p className="text-gray-800 mb-2">Category: {book.category}</p>
-                  <p className="text-gray-800">Year: {book.publishedAt}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Users List */}
-        {users.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">👥 Registered Users</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {users.map((user) => (
-                <div key={user.id} className="bg-white rounded-lg shadow-lg p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'ADMIN'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </div>
-                  <p className="text-gray-800 mb-2">Email: {user.email}</p>
-                  <p className="text-gray-800 mb-2">Loans: {user._count.loans}</p>
-                  <p className="text-gray-800">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Active Loans List */}
-        {loans.filter(loan => loan.status === 'ACTIVE').length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">📖 Active Loans</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loans.filter(loan => loan.status === 'ACTIVE').map((loan) => (
-                <div key={loan.id} className="bg-white rounded-lg shadow-lg p-6">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{loan.book.title}</h3>
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Active
-                    </span>
-                  </div>
-                  <p className="text-gray-800 mb-2">Borrowed by: {loan.user.name}</p>
-                  <p className="text-gray-800 mb-2">Author: {loan.book.author}</p>
-                  <p className="text-gray-800 mb-2">Due Date: {new Date(loan.dueDate).toLocaleDateString()}</p>
-                  <p className="text-gray-800">Borrowed: {new Date(loan.borrowedAt).toLocaleDateString()}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Removida a lista de empréstimos daqui */}
 
         <footer className="text-center mt-12 text-gray-600">
           <p>© 2024 Digital Library - Built with Next.js and Prisma</p>

@@ -20,9 +20,29 @@ interface NewLoanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoanCreated: () => void;
+  loanToEdit?: Loan | null;
+  onLoanUpdated?: () => void;
 }
 
-export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoanModalProps) {
+interface Loan {
+  id: string;
+  userId: string;
+  bookId: string;
+  borrowedAt: string;
+  dueDate: string;
+  status: string;
+  user: {
+    name: string;
+    email: string;
+  };
+  book: {
+    title: string;
+    author: string;
+    isbn: string;
+  };
+}
+
+export default function NewLoanModal({ isOpen, onClose, onLoanCreated, loanToEdit, onLoanUpdated }: NewLoanModalProps) {
   const [formData, setFormData] = useState({
     userId: '',
     bookId: '',
@@ -39,6 +59,22 @@ export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoan
       fetchBooks();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (loanToEdit) {
+      setFormData({
+        userId: loanToEdit.userId,
+        bookId: loanToEdit.bookId,
+        dueDate: loanToEdit.dueDate.split('T')[0]
+      });
+    } else {
+      setFormData({
+        userId: '',
+        bookId: '',
+        dueDate: ''
+      });
+    }
+  }, [loanToEdit, isOpen]);
 
   const fetchUsers = async () => {
     try {
@@ -57,8 +93,10 @@ export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoan
       const response = await fetch('/api/books');
       if (response.ok) {
         const booksData = await response.json();
-        // Only show available books
-        const availableBooks = booksData.filter((book: Book) => book.available);
+        // For editing, show all books; for new, only available
+        const availableBooks = loanToEdit
+          ? booksData
+          : booksData.filter((book: Book) => book.available);
         setBooks(availableBooks);
       }
     } catch (error) {
@@ -72,27 +110,35 @@ export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoan
     setError('');
 
     try {
-      const response = await fetch('/api/loans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      let response;
+      if (loanToEdit) {
+        response = await fetch(`/api/loans/${loanToEdit.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+      } else {
+        response = await fetch('/api/loans', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Error creating loan');
+        throw new Error(errorData.error || 'Error saving loan');
       }
 
-      // Clear form
-      setFormData({
-        userId: '',
-        bookId: '',
-        dueDate: ''
-      });
-
-      onLoanCreated();
+      if (loanToEdit && onLoanUpdated) {
+        onLoanUpdated();
+      } else {
+        onLoanCreated();
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -114,7 +160,7 @@ export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoan
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">📖 New Loan</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{loanToEdit ? '✏️ Edit Loan' : '📖 New Loan'}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -203,7 +249,7 @@ export default function NewLoanModal({ isOpen, onClose, onLoanCreated }: NewLoan
               disabled={isLoading || books.length === 0}
               className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
             >
-              {isLoading ? 'Creating...' : 'Create Loan'}
+              {isLoading ? (loanToEdit ? 'Saving...' : 'Creating...') : (loanToEdit ? 'Save Changes' : 'Create Loan')}
             </button>
           </div>
         </form>

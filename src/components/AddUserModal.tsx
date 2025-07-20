@@ -1,14 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AddUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUserAdded: () => void;
+  userToEdit?: User | null;
+  onUserUpdated?: () => void;
 }
 
-export default function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserModalProps) {
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  _count: {
+    loans: number;
+  };
+}
+
+export default function AddUserModal({ isOpen, onClose, onUserAdded, userToEdit, onUserUpdated }: AddUserModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,34 +31,64 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserMo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+  useEffect(() => {
+    if (userToEdit) {
+      setFormData({
+        name: userToEdit.name,
+        email: userToEdit.email,
+        password: '', // never fill password
+        role: userToEdit.role
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error adding user');
-      }
-
-      // Clear form
+    } else {
       setFormData({
         name: '',
         email: '',
         password: '',
         role: 'USER'
       });
+    }
+  }, [userToEdit, isOpen]);
 
-      onUserAdded();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      let response;
+      if (userToEdit) {
+        response = await fetch(`/api/users/${userToEdit.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            role: formData.role,
+            password: formData.password || undefined // only send if filled
+          }),
+        });
+      } else {
+        response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error saving user');
+      }
+
+      if (userToEdit && onUserUpdated) {
+        onUserUpdated();
+      } else {
+        onUserAdded();
+      }
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -67,7 +110,7 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserMo
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">👤 Register User</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{userToEdit ? '✏️ Edit User' : '👤 Register User'}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -155,7 +198,7 @@ export default function AddUserModal({ isOpen, onClose, onUserAdded }: AddUserMo
               disabled={isLoading}
               className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
-              {isLoading ? 'Registering...' : 'Register User'}
+              {isLoading ? (userToEdit ? 'Saving...' : 'Registering...') : (userToEdit ? 'Save Changes' : 'Register User')}
             </button>
           </div>
         </form>
