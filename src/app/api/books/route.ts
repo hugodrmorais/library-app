@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// GET - Listar todos os livros
+// GET - List all books
 export async function GET() {
   try {
     const books = await prisma.book.findMany({
@@ -20,7 +20,7 @@ export async function GET() {
     }
 }
 
-// POST - Criar novo livro
+// POST - Create new book
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

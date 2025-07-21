@@ -129,7 +129,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navbar */}
+      {/* Navigation Bar */}
       <nav className="bg-white shadow mb-8">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-gray-900">Digital Library</Link>
@@ -172,7 +172,7 @@ export default function Home() {
             </div>
           </div>
 
-                    {/* Quick Actions Card */}
+          {/* Quick Actions Card */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
               ⚡ Quick Actions
@@ -221,7 +221,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Removida a lista de empréstimos daqui */}
+        {/* Loans list removed from here */}
 
         <footer className="text-center mt-12 text-gray-600">
           <p>© 2024 Digital Library - Built with Next.js and Prisma</p>
