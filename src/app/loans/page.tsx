@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import NewLoanModal from "@/components/NewLoanModal";
+import Modal from '@/components/Modal';
+import Loan from '@/components/forms/Loan';
+import { useRouter } from "next/navigation";
 
 interface Loan {
   id: string;
@@ -26,6 +28,9 @@ export default function LoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
   const [editLoan, setEditLoan] = useState<Loan | null>(null);
+  const [users, setUsers] = useState([]);
+  const [books, setBooks] = useState([]);
+  const router = useRouter();
 
   const fetchLoans = async () => {
     try {
@@ -39,8 +44,34 @@ export default function LoansPage() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const usersData = await response.json();
+        setUsers(usersData);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchBooks = async () => {
+    try {
+      const response = await fetch('/api/books');
+      if (response.ok) {
+        const booksData = await response.json();
+        setBooks(booksData);
+      }
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLoans();
+    fetchUsers();
+    fetchBooks();
   }, []);
 
   const handleAddLoan = () => {
@@ -67,6 +98,13 @@ export default function LoansPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Unknown error');
     }
+  };
+
+  // New handler for form submit
+  const handleLoanSubmit = () => {
+    setIsLoanModalOpen(false);
+    fetchLoans();
+    router.push("/loans");
   };
 
   return (
@@ -129,13 +167,9 @@ export default function LoansPage() {
           <p className="text-gray-700 text-center">No active loans at the moment.</p>
         )}
       </div>
-      <NewLoanModal
-        isOpen={isLoanModalOpen}
-        onClose={() => setIsLoanModalOpen(false)}
-        onLoanCreated={fetchLoans}
-        loanToEdit={editLoan}
-        onLoanUpdated={fetchLoans}
-      />
+      <Modal isOpen={isLoanModalOpen} onClose={() => setIsLoanModalOpen(false)}>
+        <Loan onSubmit={handleLoanSubmit} initialData={editLoan || undefined} users={users} books={books} />
+      </Modal>
     </div>
   );
 }

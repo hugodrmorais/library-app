@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import AddBookModal from "@/components/AddBookModal";
+import Modal from '@/components/Modal';
+import Book from '@/components/forms/Book';
+import { useRouter } from "next/navigation";
 
 interface Book {
   id: string;
@@ -18,6 +20,7 @@ export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [editBook, setEditBook] = useState<Book | null>(null);
+  const router = useRouter();
 
   const fetchBooks = async () => {
     try {
@@ -59,6 +62,13 @@ export default function BooksPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Unknown error');
     }
+  };
+
+  // New handler for form submit
+  const handleBookSubmit = () => {
+    setIsBookModalOpen(false);
+    fetchBooks();
+    router.push("/books");
   };
 
   return (
@@ -127,13 +137,9 @@ export default function BooksPage() {
           <p className="text-gray-700 text-center">No books registered yet.</p>
         )}
       </div>
-      <AddBookModal
-        isOpen={isBookModalOpen}
-        onClose={() => setIsBookModalOpen(false)}
-        onBookAdded={fetchBooks}
-        bookToEdit={editBook}
-        onBookUpdated={fetchBooks}
-      />
+      <Modal isOpen={isBookModalOpen} onClose={() => setIsBookModalOpen(false)}>
+        <Book onSubmit={handleBookSubmit} initialData={editBook || undefined} />
+      </Modal>
     </div>
   );
 }

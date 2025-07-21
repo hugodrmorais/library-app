@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AddBookModal from '@/components/AddBookModal';
-import AddUserModal from '@/components/AddUserModal';
-import NewLoanModal from '@/components/NewLoanModal';
+import Modal from '@/components/Modal'
+import Book from '@/components/forms/Book'
+import User from '@/components/forms/User'
+import Loan from '@/components/forms/Loan'
 import Link from "next/link";
 
 interface Book {
@@ -228,23 +229,17 @@ export default function Home() {
         </footer>
       </div>
 
-      <AddBookModal
-        isOpen={isBookModalOpen}
-        onClose={() => setIsBookModalOpen(false)}
-        onBookAdded={handleBookAdded}
-      />
+      <Modal isOpen={isBookModalOpen} onClose={() => setIsBookModalOpen(false)}>
+        <Book onSubmit={handleBookAdded} />
+      </Modal>
 
-      <AddUserModal
-        isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
-        onUserAdded={handleUserAdded}
-      />
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)}>
+        <User onSubmit={handleUserAdded} />
+      </Modal>
 
-      <NewLoanModal
-        isOpen={isLoanModalOpen}
-        onClose={() => setIsLoanModalOpen(false)}
-        onLoanCreated={handleLoanCreated}
-      />
+      <Modal isOpen={isLoanModalOpen} onClose={() => setIsLoanModalOpen(false)}>
+        <Loan onSubmit={handleLoanCreated} users={users} books={books} />
+      </Modal>
     </div>
   );
 }

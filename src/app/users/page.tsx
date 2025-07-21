@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import AddUserModal from "@/components/AddUserModal";
+import Modal from '@/components/Modal';
+import User from '@/components/forms/User';
+import { useRouter } from "next/navigation";
 import { prisma } from '@/lib/prisma';
 
 interface User {
@@ -20,6 +22,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const router = useRouter();
 
   const fetchUsers = async () => {
     try {
@@ -61,6 +64,13 @@ export default function UsersPage() {
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Unknown error');
     }
+  };
+
+  // New handler for form submit
+  const handleUserSubmit = () => {
+    setIsUserModalOpen(false);
+    fetchUsers();
+    router.push("/users");
   };
 
   return (
@@ -126,13 +136,9 @@ export default function UsersPage() {
           <p className="text-gray-700 text-center">No users registered yet.</p>
         )}
       </div>
-      <AddUserModal
-        isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
-        onUserAdded={fetchUsers}
-        userToEdit={editUser}
-        onUserUpdated={fetchUsers}
-      />
+      <Modal isOpen={isUserModalOpen} onClose={() => setIsUserModalOpen(false)}>
+        <User onSubmit={handleUserSubmit} initialData={editUser || undefined} />
+      </Modal>
     </div>
   );
 }
